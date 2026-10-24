@@ -1,0 +1,60 @@
+<div class="upload-zone">
+  <div
+    [class.dragover]="dragOver"
+    [class.has-errors]="errors.length > 0"
+    (dragover)="onDragOver($event)"
+    (dragleave)="onDragLeave()"
+    (drop)="onDrop($event)"
+    (click)="fileInput.click()"
+    role="button"
+    aria-label="Zona de carga de archivos"
+    tabindex="0"
+    (keydown.enter)="fileInput.click()">
+    <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+      <polyline points="17 8 12 3 7 8"></polyline>
+      <line x1="12" y1="3" x2="12" y2="15"></line>
+    </svg>
+    <p>Arrastra archivos aquí o haz clic para seleccionar</p>
+    <p class="upload-hint">PDF, JPG, PNG, DOCX &nbsp;·&nbsp; máx {{maxSizeMB}} MB por archivo &nbsp;·&nbsp; máx {{MAX_FILES_PER_PQRS}} archivos</p>
+  </div>
+
+  <input #fileInput type="file" [accept]="accept" multiple hidden (change)="onFileInputChange($event)">
+
+  <div *ngIf="errors.length > 0" class="upload-errors">
+    <p *ngFor="let err of errors" class="error-text">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-right:4px">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+      {{ err }}
+    </p>
+  </div>
+
+  <ul *ngIf="selectedFiles.length > 0" class="file-list">
+    <li *ngFor="let f of selectedFiles; let i = index" [class.has-error]="f.error">
+      <div class="file-preview">
+        <ng-container [ngSwitch]="f.type">
+          <img *ngSwitchCase="'image'" [src]="f.previewUrl" alt="" width="64" height="64" class="preview-image">
+          <svg *ngSwitchCase="'doc'" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" class="preview-icon">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <svg *ngSwitchDefault viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="2" class="preview-icon">
+            <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+            <polyline points="13 2 13 9 20 9"></polyline>
+          </svg>
+        </ng-container>
+      </div>
+      <div class="file-info">
+        <span class="file-name" [title]="f.name">{{ f.name }}</span>
+        <span class="file-size">{{ f.sizeFormatted }}</span>
+        <span *ngIf="f.error" class="file-error">{{ f.error }}</span>
+      </div>
+      <button (click)="removeFile(i)" aria-label="Quitar {{ f.name }}" class="remove-btn" type="button">✕</button>
+    </li>
+  </ul>
+</div>
