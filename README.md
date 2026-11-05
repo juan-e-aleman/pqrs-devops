@@ -16,7 +16,8 @@ Sistema de gestión de **Peticiones, Quejas, Reclamos y Sugerencias** construido
 brandon/
 ├── pqrs-backend/      # API REST (NestJS)
 ├── pqrs-frontend/     # Aplicación web (Angular)
-├── docker-compose.yml # PostgreSQL en Docker
+├── docker-compose.yml # PostgreSQL, backend, frontend y Nginx
+├── nginx/             # Reverse proxy
 ├── package.json       # Scripts raíz del monorepo
 └── README.md
 ```
@@ -25,32 +26,32 @@ brandon/
 
 ## ⚙️ Requisitos previos
 
-- [Node.js](https://nodejs.org/) v20 o superior
-- [npm](https://www.npmjs.com/) v9 o superior
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) corriendo
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y abierto.
+- No necesitas instalar Node.js para ejecutar la aplicación con Docker.
 
 ---
 
-## 🚀 Inicio rápido (primera vez)
+## 🚀 Inicio local con Docker
 
-Desde la **raíz del proyecto** (`brandon/`), ejecuta un único comando:
-
-```bash
-npm run setup
-```
-
-Esto hace automáticamente:
-1. 🐳 Levanta el contenedor de PostgreSQL
-2. 📦 Instala dependencias del backend y del frontend
-3. 🗄️ Corre las migraciones de base de datos
-
-Luego, para arrancar ambos servidores en paralelo:
+Abre una terminal en la carpeta raíz del proyecto (donde está `docker-compose.yml`) y ejecuta:
 
 ```bash
-npm start
+Copy-Item .env.example .env
+docker compose up --build
 ```
 
-> El backend queda en `http://localhost:3000` y el frontend en `http://localhost:4200`.
+En PowerShell, el primer comando crea tu archivo local `.env` a partir del ejemplo. Puedes editarlo para cambiar credenciales y puertos antes de iniciar.
+
+La primera vez Docker descarga las imágenes e instala las dependencias dentro de los contenedores; puede tardar unos minutos. Al terminar, abre:
+
+- Aplicación web: <http://localhost:8080>
+- API y documentación: <http://localhost:8080/api/docs>
+
+Nginx es el único servicio publicado en tu máquina. Envía `/api` y `/uploads` al backend y el resto de rutas al frontend. El backend espera a que PostgreSQL esté listo y aplica las migraciones al iniciar. PostgreSQL solo es accesible por la red interna de Docker. Puedes detener todo con `Ctrl+C`; para detener y retirar los contenedores ejecuta `docker compose down`. Los datos de PostgreSQL se conservan en un volumen.
+
+Para iniciar en segundo plano: `docker compose up --build -d`. Para ver qué está pasando: `docker compose logs -f`. Para reconstruir tras cambios en Dockerfiles o dependencias: `docker compose up --build`.
+
+> El compose usa credenciales y secretos de desarrollo local. No los uses para publicar la aplicación en internet.
 
 ---
 
@@ -64,27 +65,28 @@ npm start
 | `npm run install:backend` | Solo backend |
 | `npm run install:frontend` | Solo frontend |
 
-### 🐳 Base de datos (Docker)
+### 🐳 Base de datos y aplicación (Docker)
 
 | Comando | Descripción |
 |---------|-------------|
-| `npm run db:up` | Levanta el contenedor de PostgreSQL en segundo plano |
-| `npm run db:down` | Detiene y elimina el contenedor |
-| `npm run db:logs` | Muestra los logs en tiempo real del contenedor |
+| `docker compose up --build` | Construye e inicia base de datos, backend, frontend y Nginx |
+| `docker compose down` | Detiene y retira los contenedores (conserva la base de datos) |
+| `docker compose logs -f` | Muestra los logs en tiempo real |
+| `docker compose down -v` | Borra también los datos de la base de datos |
 
-> **Credenciales por defecto** (ver `docker-compose.yml`):
-> - Host: `localhost` · Puerto: `5433`
+> **Credenciales locales de la base de datos** (ver `.env`):
+> - Host: solo dentro de Docker (`postgres`) · Puerto interno: `5432`
 > - Usuario: `pqrs_user` · Contraseña: `pqrs_pass` · DB: `pqrs`
 
 ### 🗄️ Migraciones
 
 | Comando | Descripción |
 |---------|-------------|
-| `npm run migrate` | Ejecuta todas las migraciones pendientes |
-| `npm run migrate:revert` | Revierte la última migración aplicada |
-| `npm run seed` | Carga datos iniciales (usuarios, roles, etc.) |
+| `docker compose exec backend npm run migration:run` | Ejecuta migraciones pendientes manualmente |
+| `docker compose exec backend npm run migration:revert` | Revierte la última migración aplicada |
+| `docker compose exec backend npm run seed` | Carga datos iniciales (usuarios, roles, etc.) |
 
-> ⚠️ Asegúrate de que el contenedor de Docker esté corriendo (`npm run db:up`) **antes** de ejecutar migraciones.
+> Las migraciones pendientes se ejecutan automáticamente al iniciar el backend con Compose.
 
 ### ▶️ Desarrollo
 
@@ -106,29 +108,7 @@ npm start       # db:up + dev (backend + frontend)
 
 ## 🔧 Variables de entorno
 
-El backend necesita un archivo `.env`. Cópialo desde el ejemplo:
-
-```bash
-cp pqrs-backend/.env.example pqrs-backend/.env
-```
-
-Edita `pqrs-backend/.env` con los valores reales. Las variables clave son:
-
-```env
-# Base de datos (debe coincidir con docker-compose.yml)
-DB_HOST=localhost
-DB_PORT=5433
-DB_USER=pqrs_user
-DB_PASSWORD=pqrs_pass
-DB_NAME=pqrs
-
-# JWT
-JWT_SECRET=<secreto-seguro>
-JWT_REFRESH_SECRET=<secreto-refresh-seguro>
-
-# URL del frontend (para CORS)
-FRONTEND_URL=http://localhost:4200
-```
+Docker Compose lee las variables del archivo `.env` ubicado en la raíz del repositorio. Créalo con `Copy-Item .env.example .env` en PowerShell y edítalo según necesites. No subas `.env` a Git: está excluido por `.gitignore`. `NGINX_PORT` define el puerto de entrada en tu máquina (por defecto 8080). El backend se conecta a la base de datos usando `DB_HOST=postgres` y `DB_PORT=5432`; ni la base de datos ni los servicios de aplicación publican puertos al host.
 
 ---
 
@@ -177,7 +157,7 @@ npm run seed
 Una vez que el backend está corriendo, la documentación Swagger está disponible en:
 
 ```
-http://localhost:3000/api
+http://localhost:8080/api/docs
 ```
 
 ---
@@ -191,13 +171,11 @@ npm run db:up
 npm run db:logs   # Espera hasta ver "database system is ready"
 ```
 
-### Puerto 5433 ocupado
-Cambia el puerto externo en `docker-compose.yml`:
-```yaml
-ports:
-  - "5434:5432"   # usa 5434 en vez de 5433
+### Puerto 8080 ocupado
+Cambia el puerto de entrada de Nginx en el archivo `.env`:
+```env
+NGINX_PORT=8081
 ```
-Y actualiza `DB_PORT=5434` en `pqrs-backend/.env`.
 
 ### Error de migración `relation already exists`
 ```bash

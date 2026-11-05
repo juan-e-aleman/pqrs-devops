@@ -2,26 +2,81 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: pqrs_postgres
-
     environment:
-      POSTGRES_USER: pqrs_user
-      POSTGRES_PASSWORD: pqrs_pass
-      POSTGRES_DB: pqrs
-
-    ports:
-      - "5433:5432"
-
+      POSTGRES_USER: ${DB_USER:-pqrs_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-pqrs_pass}
+      POSTGRES_DB: ${DB_NAME:-pqrs}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pqrs_user -d pqrs"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-pqrs_user} -d ${DB_NAME:-pqrs}"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
+    networks:
+      - interna
+    restart: unless-stopped
 
+  backend:
+    build:
+      context: ./pqrs-backend
+    container_name: pqrs_backend
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: 3000
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      JWT_SECRET: ${JWT_SECRET:?Define JWT_SECRET en .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Define JWT_REFRESH_SECRET en .env}
+      FRONTEND_URL: ${FRONTEND_URL}
+    expose:
+      - "3000"
+    volumes:
+      - ./pqrs-backend/uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - publica
+      - interna
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./pqrs-frontend
+    container_name: pqrs_frontend
+    expose:
+      - "4000"
+    depends_on:
+      - backend
+    networks:
+      - publica
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: pqrs_nginx
+    ports:
+      - "${NGINX_PORT}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - publica
     restart: unless-stopped
 
 volumes:
   postgres_data:
+
+networks:
+  publica:
+    driver: bridge
+  interna:
+    driver: bridge
+    internal: true
