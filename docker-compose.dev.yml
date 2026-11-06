@@ -1,0 +1,13 @@
+# Override local para desarrollo.
+# Publica PostgreSQL y la API solo en loopback (localhost), no en la red LAN.
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+services:
+  postgres:
+    ports:
+      - "127.0.0.1:${DEV_DB_PORT:-5433}:5432"
+
+  backend:
+    ports:
+      - "127.0.0.1:${DEV_API_PORT:-3000}:3000"
