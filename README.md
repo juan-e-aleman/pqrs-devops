@@ -1,224 +1,409 @@
-# 📋 Sistema PQRS
+#  PQRS | Sistema de Peticiones, Quejas, Reclamos y Sugerencias
 
-Sistema de gestión de **Peticiones, Quejas, Reclamos y Sugerencias** construido con:
+<p align="center">
+  <img src="https://img.shields.io/badge/Proyecto-PQRS-2563EB?style=for-the-badge" alt="Proyecto PQRS">
+  <img src="https://img.shields.io/badge/Backend-NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" alt="NestJS">
+  <img src="https://img.shields.io/badge/Frontend-Angular-DD0031?style=for-the-badge&logo=angular&logoColor=white" alt="Angular">
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL">
+  <img src="https://img.shields.io/badge/Containers-Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" alt="Docker">
+</p>
 
-| Capa | Tecnología |
-|------|-----------|
-| Frontend | Angular 21 |
-| Backend | NestJS 11 + TypeORM |
-| Base de datos | PostgreSQL 16 (Docker) |
+<p align="center">
+  <strong>Una plataforma para centralizar, gestionar y realizar seguimiento a las solicitudes de la comunidad universitaria.</strong>
+</p>
 
 ---
 
-## 🗂️ Estructura del repositorio
+##  Sobre el proyecto
 
+**PQRS** es un sistema de información diseñado para gestionar las Peticiones, Quejas, Reclamos y Sugerencias de la comunidad universitaria.
+
+La plataforma busca facilitar el registro de solicitudes, organizar su atención y permitir el seguimiento de cada caso mediante una estructura tecnológica modular.
+
+###  Objetivos principales
+
+-  Centralizar el registro de solicitudes.
+-  Facilitar el seguimiento de los casos.
+-  Proteger la información mediante mecanismos de autenticación y autorización.
+-  Organizar los servicios de la aplicación en una arquitectura modular.
+-  Preparar el entorno para futuras prácticas de integración y entrega continua (CI/CD).
+
+---
+
+##  Arquitectura tecnológica
+
+El proyecto está organizado en tres componentes principales, apoyados por servicios de infraestructura y contenedorización.
+
+| Componente | Tecnología | Responsabilidad |
+|:---|:---|:---|
+|  Frontend | Angular 21 | Interfaz de usuario |
+|  Backend | NestJS 11 + TypeORM | API REST y lógica de negocio |
+|  Base de datos | PostgreSQL 16 | Persistencia de información |
+|  Contenedores | Docker Compose | Orquestación de servicios |
+|  Servidor web | Nginx | Entrada web y enrutamiento |
+
+###  Vista general de la arquitectura
+
+```mermaid
+flowchart TD
+    U[" Usuario"]
+    N[" Nginx"]
+    F[" Frontend Angular"]
+    B[" Backend NestJS"]
+    D[(" PostgreSQL")]
+    
+    U --> N
+    N --> F
+    N --> B
+    B --> D
+
+    subgraph DOCKER[" Entorno Docker Compose"]
+        N
+        F
+        B
+        D
+    end
 ```
-brandon/
-├── pqrs-backend/      # API REST (NestJS)
-├── pqrs-frontend/     # Aplicación web (Angular)
-├── docker-compose.yml # PostgreSQL en Docker
-├── package.json       # Scripts raíz del monorepo
-└── README.md
+
+> **Nota:** Docker Compose permite definir y administrar los servicios del entorno desde un archivo de configuración centralizado.
+
+---
+
+### 🐳 Infraestructura y comunicación de servicios
+
+```mermaid
+flowchart TB
+    HOST(["💻 Equipo anfitrión"])
+
+    subgraph DOCKER["🐳 Docker Compose"]
+        N["🌐 Nginx"]
+        F["🖥️ Frontend Angular"]
+        B["⚙️ Backend NestJS"]
+        DB[("🐘 PostgreSQL 16")]
+        VOL[("💾 Volumen persistente")]
+
+        N --> F
+        N -->|"Proxy API"| B
+        B -->|"Conexión a PostgreSQL"| DB
+        DB --- VOL
+    end
+
+    HOST -->|"Acceso por puerto publicado"| N
+
+    classDef service fill:#dbeafe,stroke:#2563eb,color:#172554
+    classDef database fill:#ede9fe,stroke:#7c3aed,color:#312e81
+
+    class N,F,B service
+    class DB,VOL database
+```
+---
+
+##  Estructura del repositorio
+
+```text
+pqrs-devops/
+│
+├──  pqrs-backend/
+│   ├── src/
+│   ├── migrations/
+│   ├── package.json
+│   └── Dockerfile
+│
+├──  pqrs-frontend/
+│   ├── src/
+│   ├── package.json
+│   └── Dockerfile
+│
+├──  scripts/
+│   └── generate-env.ps1
+│
+├──  docs/
+│
+├──  docker-compose.yml
+├──  docker-compose.dev.yml
+├──  .env.example
+├──  .gitignore
+└──  README.md
 ```
 
 ---
 
-## ⚙️ Requisitos previos
+##  Requisitos previos
 
-- [Node.js](https://nodejs.org/) v20 o superior
-- [npm](https://www.npmjs.com/) v9 o superior
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) corriendo
+Antes de ejecutar el proyecto, asegúrate de contar con las siguientes herramientas:
+
+| Herramienta | Versión / requisito |
+|:---|:---|
+| Node.js | 20 o superior |
+| npm | 9 o superior |
+| Docker Desktop | Instalado y en ejecución |
+| Git | Instalado |
+| PowerShell | Para el script de generación de variables de entorno |
+
+### 🔗 Herramientas oficiales
+
+- [Node.js](https://nodejs.org/)
+- [npm](https://www.npmjs.com/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+- [Git](https://git-scm.com/)
 
 ---
 
-## 🚀 Inicio rápido (primera vez)
+##  Puesta en marcha
 
-Desde la **raíz del proyecto** (`brandon/`), ejecuta un único comando:
+### 1. Clonar el repositorio
 
 ```bash
-npm run setup
+git clone <URL_DEL_REPOSITORIO>
+cd pqrs-devops
 ```
 
-Esto hace automáticamente:
-1. 🐳 Levanta el contenedor de PostgreSQL
-2. 📦 Instala dependencias del backend y del frontend
-3. 🗄️ Corre las migraciones de base de datos
+### 2. Configurar las variables de entorno
 
-Luego, para arrancar ambos servidores en paralelo:
+El proyecto utiliza variables de entorno para gestionar credenciales, secretos y parámetros de configuración.
+
+En Windows PowerShell, desde la raíz del proyecto:
+
+```powershell
+.\scripts\generate-env.ps1
+```
+
+Este script genera el archivo `.env` a partir de `.env.example`, incluyendo secretos aleatorios para la configuración inicial.
+
+>  **Importante:** el archivo `.env` contiene información sensible. No debe subirse al repositorio ni compartirse públicamente.
+
+### 3. Construir y levantar los servicios
 
 ```bash
-npm start
+docker compose up -d --build
 ```
 
-> El backend queda en `http://localhost:3000` y el frontend en `http://localhost:4200`.
+### 4. Verificar los contenedores
+
+```bash
+docker compose ps
+```
+
+Para consultar los registros:
+
+```bash
+docker compose logs -f
+```
+
+> Los puertos y las direcciones de acceso dependen de la configuración del archivo `.env` y de Docker Compose.
 
 ---
 
-## 📦 Scripts disponibles
+##  Comandos útiles
 
-### Instalación de dependencias
+###  Docker Compose
 
 | Comando | Descripción |
-|---------|-------------|
-| `npm run install:all` | Instala dependencias de backend **y** frontend |
-| `npm run install:backend` | Solo backend |
-| `npm run install:frontend` | Solo frontend |
+|:---|:---|
+| `docker compose up -d` | Inicia los servicios en segundo plano |
+| `docker compose up -d --build` | Construye e inicia los servicios |
+| `docker compose down` | Detiene y elimina los contenedores |
+| `docker compose ps` | Consulta el estado de los servicios |
+| `docker compose logs -f` | Visualiza los registros en tiempo real |
+| `docker compose restart` | Reinicia los servicios |
 
-### 🐳 Base de datos (Docker)
-
-| Comando | Descripción |
-|---------|-------------|
-| `npm run db:up` | Levanta el contenedor de PostgreSQL en segundo plano |
-| `npm run db:down` | Detiene y elimina el contenedor |
-| `npm run db:logs` | Muestra los logs en tiempo real del contenedor |
-
-> **Credenciales por defecto** (ver `docker-compose.yml`):
-> - Host: `localhost` · Puerto: `5433`
-> - Usuario: `pqrs_user` · Contraseña: `pqrs_pass` · DB: `pqrs`
-
-### 🗄️ Migraciones
+###  Dependencias
 
 | Comando | Descripción |
-|---------|-------------|
-| `npm run migrate` | Ejecuta todas las migraciones pendientes |
-| `npm run migrate:revert` | Revierte la última migración aplicada |
-| `npm run seed` | Carga datos iniciales (usuarios, roles, etc.) |
-
-> ⚠️ Asegúrate de que el contenedor de Docker esté corriendo (`npm run db:up`) **antes** de ejecutar migraciones.
-
-### ▶️ Desarrollo
-
-| Comando | Descripción |
-|---------|-------------|
-| `npm start` | Levanta Docker + backend + frontend en paralelo |
-| `npm run dev` | Backend y frontend en paralelo (sin tocar Docker) |
-| `npm run dev:backend` | Solo backend (modo watch) |
-| `npm run dev:frontend` | Solo frontend |
-
-### 🏁 Setup completo
-
-```bash
-npm run setup   # db:up + install:all + migrate
-npm start       # db:up + dev (backend + frontend)
-```
+|:---|:---|
+| `npm install` | Instala las dependencias del proyecto |
+| `npm run build` | Construye el backend |
+| `npm audit --omit=dev` | Revisa vulnerabilidades en dependencias de producción |
 
 ---
 
-## 🔧 Variables de entorno
+##  Seguridad de la aplicación
 
-El backend necesita un archivo `.env`. Cópialo desde el ejemplo:
+La configuración del proyecto contempla diferentes medidas para proteger los servicios y la información.
 
-```bash
-cp pqrs-backend/.env.example pqrs-backend/.env
+| Medida | Descripción |
+|:---|:---|
+|  Variables de entorno | Gestión de credenciales y secretos fuera del código fuente |
+|  JWT | Autenticación mediante tokens |
+|  Control de acceso | Restricción de operaciones según roles y permisos |
+|  TLS | Validación de certificados en conexiones SMTP |
+|  Docker | Aislamiento y configuración de servicios |
+|  Dependencias | Actualización y auditoría de paquetes |
+
+
+###  Flujo de autenticación y autorización
+
+```mermaid
+flowchart TD
+    A([" Usuario"]) --> B["Envía credenciales"]
+    B --> C["AuthService"]
+    C --> D{"¿Credenciales válidas?"}
+
+    D -->|"No"| E[" HTTP 401"]
+    D -->|"Sí"| F["Generación del JWT"]
+
+    F --> G["Solicitud a endpoint protegido"]
+    G --> H["JwtStrategy<br/>Valida el token"]
+
+    H --> I{"¿Token válido?"}
+
+    I -->|"No"| J[" HTTP 401"]
+    I -->|"Sí"| K["RolesGuard<br/>Comprueba permisos"]
+
+    K --> L{"¿Rol autorizado?"}
+
+    L -->|"No"| M[" HTTP 403"]
+    L -->|"Sí"| N[" Acceso permitido"]
+
+    N --> O["Ejecución del endpoint"]
+
+    classDef success fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef error fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef process fill:#dbeafe,stroke:#2563eb,color:#172554
+
+    class N,O success
+    class E,J,M error
+    class C,F,H,K process
 ```
 
-Edita `pqrs-backend/.env` con los valores reales. Las variables clave son:
 
-```env
-# Base de datos (debe coincidir con docker-compose.yml)
-DB_HOST=localhost
-DB_PORT=5433
-DB_USER=pqrs_user
-DB_PASSWORD=pqrs_pass
-DB_NAME=pqrs
+### Buenas prácticas
 
-# JWT
-JWT_SECRET=<secreto-seguro>
-JWT_REFRESH_SECRET=<secreto-refresh-seguro>
-
-# URL del frontend (para CORS)
-FRONTEND_URL=http://localhost:4200
-```
+- No publicar archivos `.env`.
+- No incluir contraseñas ni secretos en el código fuente.
+- Utilizar contraseñas y secretos robustos.
+- Mantener actualizadas las dependencias.
+- Revisar los permisos de acceso a los endpoints.
+- Validar las configuraciones antes de desplegar.
 
 ---
 
-## 🗄️ Flujo de migraciones (detallado)
+##  Base de datos y migraciones
 
-Las migraciones están gestionadas con **TypeORM CLI** desde el backend.
+El backend utiliza **TypeORM** para gestionar la estructura y evolución de la base de datos PostgreSQL.
 
-### Ver migraciones disponibles
+Las migraciones permiten registrar y aplicar cambios de estructura de manera controlada.
+
+### Comandos principales
 
 ```bash
-cd pqrs-backend
+# Consultar migraciones
 npm run typeorm -- migration:show -d src/db/data-source.ts
-```
 
-### Generar una nueva migración
-
-```bash
-cd pqrs-backend
+# Generar una migración
 npm run migration:generate -- src/db/migrations/NombreDeLaMigracion
-```
 
-### Aplicar migraciones (desde raíz)
-
-```bash
+# Ejecutar migraciones
 npm run migrate
-```
 
-### Revertir la última migración (desde raíz)
-
-```bash
+# Revertir la última migración
 npm run migrate:revert
-```
 
-### Cargar datos semilla
-
-```bash
+# Cargar datos iniciales
 npm run seed
 ```
 
-> Los seeders crean los usuarios iniciales del sistema. Revisa [`USUARIOS_SEED.md`](./USUARIOS_SEED.md) para ver las credenciales.
+> Ejecuta los comandos desde el directorio que corresponda a los scripts definidos en el `package.json` del backend o del proyecto raíz.
 
 ---
 
-## 📡 Endpoints principales
+##  API REST
 
-Una vez que el backend está corriendo, la documentación Swagger está disponible en:
+El backend está desarrollado con NestJS y expone servicios REST para la gestión de las solicitudes.
 
-```
+La documentación interactiva de Swagger permite consultar los endpoints, sus parámetros y las respuestas de la API.
+
+**Documentación local:**
+
+```text
 http://localhost:3000/api
 ```
 
----
-
-## 🐛 Solución de problemas frecuentes
-
-### `ECONNREFUSED` al conectar con la base de datos
-```bash
-# Verifica que Docker esté corriendo
-npm run db:up
-npm run db:logs   # Espera hasta ver "database system is ready"
-```
-
-### Puerto 5433 ocupado
-Cambia el puerto externo en `docker-compose.yml`:
-```yaml
-ports:
-  - "5434:5432"   # usa 5434 en vez de 5433
-```
-Y actualiza `DB_PORT=5434` en `pqrs-backend/.env`.
-
-### Error de migración `relation already exists`
-```bash
-npm run migrate:revert   # revierte la última
-npm run migrate          # vuelve a aplicar
-```
-
-### `concurrently: command not found`
-```bash
-npm install   # instala devDependencies del package.json raíz
-```
+*La dirección depende del puerto configurado para el backend.*
 
 ---
 
-## 📚 Documentación adicional
+##  Documentación adicional
 
-| Archivo | Contenido |
-|---------|-----------|
-| [`CASOS_DE_USO.md`](./CASOS_DE_USO.md) | Casos de uso del sistema |
-| [`ESTADOS_FLUJO.md`](./ESTADOS_FLUJO.md) | Flujo de estados de una PQRS |
-| [`PRIORIDAD.md`](./PRIORIDAD.md) | Criterios de priorización |
-| [`SEGURIDAD.md`](./SEGURIDAD.md) | Consideraciones de seguridad |
-| [`USUARIOS_SEED.md`](./USUARIOS_SEED.md) | Credenciales de usuarios semilla |
-| [`pqrs-backend/FILE_UPLOAD_DOCUMENTATION.md`](./pqrs-backend/FILE_UPLOAD_DOCUMENTATION.md) | Carga de archivos |
+| Documento | Descripción |
+|:---|:---|
+| `CASOS_DE_USO.md` | Casos de uso del sistema |
+| `ESTADOS_FLUJO.md` | Flujo de estados de una PQRS |
+| `PRIORIDAD.md` | Criterios de priorización |
+| `SEGURIDAD.md` | Consideraciones de seguridad |
+| `USUARIOS_SEED.md` | Información sobre usuarios de prueba |
+| `pqrs-backend/FILE_UPLOAD_DOCUMENTATION.md` | Documentación de carga de archivos |
+
+---
+
+##  Solución de problemas
+
+<details>
+<summary><strong> Error de conexión con PostgreSQL</strong></summary>
+
+Verifica que Docker esté en ejecución y que el contenedor de PostgreSQL esté activo:
+
+```bash
+docker compose ps
+docker compose logs postgres
+```
+
+</details>
+
+<details>
+<summary><strong> Puerto ocupado</strong></summary>
+
+Comprueba qué servicio está utilizando el puerto y revisa la configuración de puertos en Docker Compose y las variables de entorno.
+
+</details>
+
+<details>
+<summary><strong> Error al ejecutar migraciones</strong></summary>
+
+Verifica la conexión a la base de datos, las credenciales y que el servicio PostgreSQL esté disponible.
+
+```bash
+docker compose logs postgres
+```
+
+</details>
+
+<details>
+<summary><strong> Problemas con las dependencias</strong></summary>
+
+Verifica que estés utilizando una versión compatible de Node.js y ejecuta la instalación de dependencias en el directorio correspondiente.
+
+</details>
+
+---
+
+##  Desarrollo y colaboración
+
+Este proyecto se desarrolla bajo un esquema de trabajo colaborativo utilizando Git y GitHub.
+
+Se emplean ramas para organizar las funcionalidades, correcciones y tareas de desarrollo.
+
+### Flujo de trabajo
+
+```mermaid
+flowchart LR
+    M["main"]
+    D["develop"]
+    F["feature/*"]
+    P["Pull Request"]
+    
+    M --> D
+    D --> F
+    F --> P
+    P --> D
+```
+
+Las contribuciones se integran mediante Pull Requests y revisión de cambios, siguiendo las reglas de colaboración definidas por el equipo.
+
+---
+
+<p align="center">
+  <strong> PQRS — Tecnología para una gestión universitaria más organizada.</strong>
+  <br>
+  <sub>Proyecto académico · Desarrollo de Software</sub>
+</p>
