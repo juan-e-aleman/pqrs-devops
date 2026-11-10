@@ -16,18 +16,21 @@ import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['../.env', '.env'],
+    }),
 
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: parseInt(configService.get<string>('DB_PORT', '5432'), 10),
-        username: configService.get<string>('DB_USER', 'pqrs_user'),
-        password: configService.get<string>('DB_PASSWORD', 'pqrs_pass'),
-        database: configService.get<string>('DB_NAME', 'pqrs'),
+        host: configService.getOrThrow<string>('DB_HOST'),
+        port: parseInt(configService.getOrThrow<string>('DB_PORT'), 10),
+        username: configService.getOrThrow<string>('DB_USER'),
+        password: configService.getOrThrow<string>('DB_PASSWORD'),
+        database: configService.getOrThrow<string>('DB_NAME'),
         autoLoadEntities: true,
         synchronize: false,
         logging: configService.get<string>('NODE_ENV') !== 'production',
