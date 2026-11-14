@@ -19,6 +19,7 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
+    
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
@@ -46,9 +47,10 @@ export class AuthService {
     });
 
     const saved = await this.usersRepo.save(user);
-
+    
     const tokens = await this.generateTokens(saved);
     const hashRounds = 10;
+
     saved.refreshTokenHash = await bcrypt.hash(tokens.refreshToken, hashRounds);
     await this.usersRepo.save(saved);
 
