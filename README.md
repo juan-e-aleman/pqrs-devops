@@ -162,13 +162,15 @@ cd pqrs-devops
 
 El proyecto utiliza variables de entorno para gestionar credenciales, secretos y parámetros de configuración.
 
-En Windows PowerShell, desde la raíz del proyecto:
+Puedes crear o completar el archivo `.env` manualmente desde PowerShell:
 
 ```powershell
 .\scripts\generate-env.ps1
 ```
 
-Este script genera el archivo `.env` a partir de `.env.example`, incluyendo secretos aleatorios para la configuración inicial.
+Este script crea `.env` desde `.env.example` si aún no existe. También completa secretos vacíos o marcadores pendientes en un `.env` existente y conserva los valores ya configurados.
+
+En Windows, también puedes ejecutar `setup-pqrs.bat`: este llama al mismo script para preparar `.env` y después continúa con la validación y el levantamiento de Docker Compose.
 
 >  **Importante:** el archivo `.env` contiene información sensible. No debe subirse al repositorio ni compartirse públicamente.
 

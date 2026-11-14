@@ -1,22 +1,9 @@
-
 $ErrorActionPreference = 'Stop'
 
-# Identificar la raiz del proyecto
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $examplePath = Join-Path $projectRoot '.env.example'
 $envPath = Join-Path $projectRoot '.env'
 
-# Evitar sobrescribir una configuracion existente
-if (Test-Path $envPath) {
-    throw 'Ya existe el archivo .env. No se realizaron cambios.'
-}
-
-# Verificar que exista la plantilla
-if (-not (Test-Path $examplePath)) {
-    throw 'No se encontro .env.example en la raiz del proyecto.'
-}
-
-# Generar valores aleatorios criptograficamente seguros
 function New-SecureHex {
     param (
         [Parameter(Mandatory = $true)]
@@ -35,39 +22,67 @@ function New-SecureHex {
     }
 }
 
-# Leer la plantilla
-$content = [System.IO.File]::ReadAllText($examplePath)
+if (Test-Path -LiteralPath $envPath) {
+    $script:envLines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in [System.IO.File]::ReadAllLines($envPath)) {
+        $script:envLines.Add($line)
+    }
+}
+else {
+    if (-not (Test-Path -LiteralPath $examplePath)) {
+        throw 'No se encontro .env.example en la raiz del proyecto.'
+    }
 
-# Generar secretos independientes
-$dbPassword = New-SecureHex -ByteCount 32
-$jwtSecret = New-SecureHex -ByteCount 48
-$jwtRefreshSecret = New-SecureHex -ByteCount 48
-
-# Reemplazar los valores de ejemplo
-$content = $content.Replace(
-    'REEMPLAZAR_CON_PASSWORD_SEGURA',
-    $dbPassword
-)
-
-$content = $content.Replace(
-    'GENERAR_SECRETO_ALEATORIO',
-    $jwtSecret
-)
-
-$content = $content.Replace(
-    'GENERAR_OTRO_SECRETO_ALEATORIO',
-    $jwtRefreshSecret
-)
-
-# Comprobar que no queden marcadores pendientes
-if ($content -match 'REEMPLAZAR_CON_PASSWORD_SEGURA|GENERAR_SECRETO_ALEATORIO') {
-    throw 'La plantilla contiene marcadores sin reemplazar. No se creo .env.'
+    $script:envLines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in [System.IO.File]::ReadAllLines($examplePath)) {
+        $script:envLines.Add($line)
+    }
 }
 
-# Guardar sin BOM y sin mostrar los secretos
-$encoding = [System.Text.UTF8Encoding]::new($false)
-[System.IO.File]::WriteAllText($envPath, $content, $encoding)
+function Ensure-EnvSecret {
+    param (
+        [Parameter(Mandatory = $true)] [string]$Name,
+        [Parameter(Mandatory = $true)] [int]$ByteCount,
+        [Parameter(Mandatory = $true)] [string]$Placeholder
+    )
 
-Write-Host 'Archivo .env generado correctamente.'
-Write-Host 'Se crearon secretos aleatorios para PostgreSQL y JWT.'
-Write-Host 'Por seguridad, los valores no se muestran en pantalla.'
+    $prefix = $Name + '='
+    $index = -1
+    for ($i = 0; $i -lt $script:envLines.Count; $i++) {
+        if ($script:envLines[$i].StartsWith($prefix, [System.StringComparison]::Ordinal)) {
+            $index = $i
+            break
+        }
+    }
+
+    if ($index -ge 0) {
+        $currentValue = $script:envLines[$index].Substring($prefix.Length)
+        if (-not [string]::IsNullOrWhiteSpace($currentValue) -and $currentValue -ne $Placeholder) {
+            Write-Host ($Name + ' ya existe; se conserva.')
+            return
+        }
+    }
+
+    $entry = $prefix + (New-SecureHex -ByteCount $ByteCount)
+    if ($index -ge 0) {
+        $script:envLines[$index] = $entry
+    }
+    else {
+        $script:envLines.Add($entry)
+    }
+    Write-Host ($Name + ' generado correctamente.')
+}
+
+Ensure-EnvSecret -Name 'DB_PASSWORD' -ByteCount 32 -Placeholder 'REEMPLAZAR_CON_PASSWORD_SEGURA'
+Ensure-EnvSecret -Name 'JWT_SECRET' -ByteCount 48 -Placeholder 'GENERAR_SECRETO_ALEATORIO'
+Ensure-EnvSecret -Name 'JWT_REFRESH_SECRET' -ByteCount 48 -Placeholder 'GENERAR_OTRO_SECRETO_ALEATORIO'
+
+$content = $script:envLines -join "`n"
+if ($content -match 'REEMPLAZAR_CON_PASSWORD_SEGURA|GENERAR_SECRETO_ALEATORIO|GENERAR_OTRO_SECRETO_ALEATORIO') {
+    throw 'Quedaron marcadores de secretos sin reemplazar. No se guardaron cambios.'
+}
+
+$encoding = [System.Text.UTF8Encoding]::new($false)
+[System.IO.File]::WriteAllLines($envPath, [string[]]$script:envLines, $encoding)
+
+Write-Host 'Archivo .env listo. Los valores de los secretos no se muestran.'
