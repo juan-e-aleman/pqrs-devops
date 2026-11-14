@@ -97,6 +97,149 @@ flowchart TB
     class DB,VOL database
 ```
 ---
+---
+
+## Diagrama de Casos de Uso
+
+Representación de los actores del sistema (`Ciudadano`, `Funcionario`, `Administrador` y `Sistema`) y su interacción con los 18 casos de uso agrupados por módulo.
+
+```mermaid
+flowchart LR
+    %% Actores
+    C(["Ciudadano<br/>(rol: usuario)"])
+    F(["Funcionario / Supervisor<br/>(rol: supervisor)"])
+    A(["Administrador<br/>(rol: admin)"])
+    S(["Sistema<br/>(Automatizado / Cron)"])
+
+    %% Herencia de roles
+    A -.->|"Hereda permisos"| F
+    F -.->|"Hereda permisos"| C
+
+    subgraph SISTEMA["Sistema de Gestión PQRS"]
+        direction TB
+
+        subgraph MOD_AUTH["Módulo Autenticación"]
+            CU01(["CU-01: Registrarse"])
+            CU02(["CU-02: Iniciar sesión"])
+            CU03(["CU-03: Cerrar sesión"])
+            CU17(["CU-17: Validar token JWT"])
+        end
+
+        subgraph MOD_PQRS["Módulo Gestión PQRS"]
+            TRACK(["Consulta pública por radicado"])
+            CU04(["CU-04: Crear PQRS"])
+            CU05(["CU-05: Consultar mis PQRS"])
+            CU06(["CU-06: Ver detalle PQRS"])
+            CU08(["CU-08: Responder PQRS (Ciudadano)"])
+            CU09(["CU-09: Eliminar PQRS"])
+            CU10(["CU-10: Ver todas las PQRS"])
+            CU11(["CU-11: Responder PQRS (Admin/Func)"])
+            CU12(["CU-12: Cambiar estado PQRS"])
+        end
+
+        subgraph MOD_FILES["Módulo Archivos"]
+            CU07(["CU-07: Descargar adjunto"])
+            CU15(["CU-15: Subir archivos adicionales"])
+            CU16(["CU-16: Eliminar adjunto"])
+            CU18(["CU-18: Limpieza nocturna (@Cron)"])
+        end
+
+        subgraph MOD_ADMIN["Panel Administrativo"]
+            CU13(["CU-13: Ver estadísticas"])
+            CU14(["CU-14: Gestionar usuarios"])
+        end
+    end
+
+    %% Relaciones Ciudadano
+    C --> CU01 & CU02 & CU03
+    C --> TRACK & CU04 & CU05 & CU06 & CU08 & CU09
+    C --> CU07 & CU15 & CU16
+
+    %% Relaciones Funcionario / Supervisor
+    F --> CU10 & CU11 & CU12 & CU13
+
+    %% Relaciones Administrador
+    A --> CU14
+
+    %% Relaciones Sistema
+    S --> CU17 & CU18
+
+    %% Include y Extend
+    CU04 -.->|"&lt;&lt;include&gt;&gt;"| CU15
+    CU17 -.->|"&lt;&lt;extend&gt;&gt;"| CU04 & CU05 & CU06 & CU15
+    CU12 -.->|"&lt;&lt;extend&gt;&gt;"| CU11
+
+    classDef actor fill:#dbeafe,stroke:#2563eb,color:#172554,stroke-width:2px
+    classDef auto fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:2px
+    classDef usecase fill:#f8fafc,stroke:#475569,color:#0f172a
+
+    class C,F,A actor
+    class S auto
+    class CU01,CU02,CU03,CU17,TRACK,CU04,CU05,CU06,CU08,CU09,CU10,CU11,CU12,CU07,CU15,CU16,CU18,CU13,CU14 usecase
+```
+
+---
+
+## Diagrama de Despliegue (Docker & Infraestructura)
+
+Distribución física y lógica de los nodos, contenedores Docker, volúmenes persistentes y servicios externos en producción.
+
+```mermaid
+flowchart TB
+    subgraph CLIENTE["Dispositivo Cliente (PC / Móvil)"]
+        subgraph BROWSER["Navegador Web"]
+            SPA["Angular 21 SPA<br/>(Archivos estáticos)"]
+            LS[("LocalStorage<br/>accessToken / refreshToken")]
+        end
+    end
+
+    subgraph HOST["Servidor Host / Docker Engine"]
+        ENV["Archivo .env<br/>(JWT_SECRET, DB_PASSWORD, SMTP)"]
+
+        subgraph NET["Red Interna Docker (pqrs-network)"]
+            subgraph C_FRONT["Contenedor: pqrs-frontend"]
+                NGINX["Nginx Web Server<br/>Puerto 80 / 443"]
+            end
+
+            subgraph C_BACK["Contenedor: pqrs-backend"]
+                NEST["API REST NestJS 11<br/>Node.js 20 · Puerto 3000<br/>(JWT/RolesGuard, Multer, @Cron)"]
+            end
+
+            subgraph C_DB["Contenedor: pqrs-db"]
+                PG[("PostgreSQL 16<br/>Puerto 5432")]
+            end
+        end
+
+        VOL_UP[("Volumen: uploads_data<br/>/app/uploads/pqrs")]
+        VOL_DB[("Volumen: postgres_data<br/>/var/lib/postgresql/data")]
+    end
+
+    subgraph EXT["Servicios Externos"]
+        SMTP["Servidor SMTP<br/>(Notificaciones Email · TLS 587)"]
+    end
+
+    %% Flujo de red y volúmenes
+    BROWSER -->|"HTTPS (80/443)"| NGINX
+    NGINX -->|"Sirve SPA"| SPA
+    NGINX -->|"Reverse Proxy /api"| NEST
+    NEST -->|"TCP / TypeORM (5432)"| PG
+    NEST -->|"SMTP / TLS (587)"| SMTP
+
+    NEST ---|"Montaje R/W"| VOL_UP
+    PG ---|"Persistencia BD"| VOL_DB
+    ENV -.->|"Inyección env"| C_BACK
+    ENV -.->|"Inyección env"| C_DB
+
+    classDef service fill:#dbeafe,stroke:#2563eb,color:#172554
+    classDef database fill:#ede9fe,stroke:#7c3aed,color:#312e81
+    classDef security fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef external fill:#fef3c7,stroke:#d97706,color:#78350f
+
+    class NGINX,NEST,SPA service
+    class PG,VOL_UP,VOL_DB,LS database
+    class ENV security
+    class SMTP external
+```
 
 ##  Estructura del repositorio
 
