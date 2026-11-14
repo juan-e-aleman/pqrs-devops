@@ -69,18 +69,18 @@ flowchart TD
 
 ---
 
-### 🐳 Infraestructura y comunicación de servicios
+###  Infraestructura y comunicación de servicios
 
 ```mermaid
 flowchart TB
-    HOST(["💻 Equipo anfitrión"])
+    HOST([" Equipo anfitrión"])
 
-    subgraph DOCKER["🐳 Docker Compose"]
-        N["🌐 Nginx"]
-        F["🖥️ Frontend Angular"]
-        B["⚙️ Backend NestJS"]
-        DB[("🐘 PostgreSQL 16")]
-        VOL[("💾 Volumen persistente")]
+    subgraph DOCKER["Docker Compose"]
+        N[" Nginx"]
+        F[" Frontend Angular"]
+        B[" Backend NestJS"]
+        DB[(" PostgreSQL 16")]
+        VOL[(" Volumen persistente")]
 
         N --> F
         N -->|"Proxy API"| B
