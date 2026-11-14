@@ -21,7 +21,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: JwtPayload) {
     const user = await this.usersService.findById(payload.sub);
     if (!user || !user.isActive) {
-      throw new UnauthorizedException('Acceso no autorizado. Usuario no válido o inactivo.');
+      throw new UnauthorizedException(
+        'Acceso no autorizado. Usuario no válido o inactivo.',
+      );
     }
     return user;
   }

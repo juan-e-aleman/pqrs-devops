@@ -26,7 +26,9 @@ export class AuthService {
   ) {}
 
   async emailExiste(email: string): Promise<boolean> {
-    const user = await this.usersService.findByEmail(email.toLowerCase().trim());
+    const user = await this.usersService.findByEmail(
+      email.toLowerCase().trim(),
+    );
     return !!user;
   }
 
@@ -68,9 +70,15 @@ export class AuthService {
     const user = await this.usersRepo.findOne({
       where: { email: email.toLowerCase().trim() },
       select: {
-        id: true, email: true, nombre: true, rol: true,
-        passwordHash: true, refreshTokenHash: true,
-        failedLoginAttempts: true, lockedUntil: true, isActive: true,
+        id: true,
+        email: true,
+        nombre: true,
+        rol: true,
+        passwordHash: true,
+        refreshTokenHash: true,
+        failedLoginAttempts: true,
+        lockedUntil: true,
+        isActive: true,
       },
     });
 
@@ -83,7 +91,9 @@ export class AuthService {
     }
 
     if (user.lockedUntil && user.lockedUntil > new Date()) {
-      const minutos = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+      const minutos = Math.ceil(
+        (user.lockedUntil.getTime() - Date.now()) / 60000,
+      );
       throw new UnauthorizedException(
         `Cuenta bloqueada. Intenta de nuevo en ${minutos} minuto(s).`,
       );
@@ -128,7 +138,14 @@ export class AuthService {
 
     const user = await this.usersRepo.findOne({
       where: { id: payload.sub },
-      select: { id: true, email: true, nombre: true, rol: true, refreshTokenHash: true, isActive: true },
+      select: {
+        id: true,
+        email: true,
+        nombre: true,
+        rol: true,
+        refreshTokenHash: true,
+        isActive: true,
+      },
     });
 
     if (!user || !user.isActive || !user.refreshTokenHash) {
@@ -153,7 +170,9 @@ export class AuthService {
     await this.usersRepo.update(userId, { refreshTokenHash: null });
   }
 
-  private async generateTokens(user: User): Promise<{ accessToken: string; refreshToken: string }> {
+  private async generateTokens(
+    user: User,
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
