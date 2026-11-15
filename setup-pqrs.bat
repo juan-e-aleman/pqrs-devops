@@ -50,7 +50,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-docker compose up -d
+docker compose up -d --build
 if errorlevel 1 (
     echo ERROR: No se pudieron iniciar los servicios.
     exit /b 1
