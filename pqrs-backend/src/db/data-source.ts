@@ -27,5 +27,6 @@ export const AppDataSource = new DataSource({
   entities: [path.join(__dirname, '../**/*.entity.{js,ts}')],
   migrations: [path.join(__dirname, './migrations/*.{js,ts}')],
   synchronize: false,
+  migrationsTransactionMode: 'each',
   logging: process.env.NODE_ENV !== 'production',
 });
