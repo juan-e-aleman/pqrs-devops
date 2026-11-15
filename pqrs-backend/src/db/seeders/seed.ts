@@ -11,7 +11,7 @@ async function runSeeders() {
     console.log('✓ Conexión a base de datos establecida');
 
     // Run user seeder
-    await seedUsers(AppDataSource);
+    await seedUsers(AppDataSource.manager);
 
     // Close connection
     await AppDataSource.destroy();

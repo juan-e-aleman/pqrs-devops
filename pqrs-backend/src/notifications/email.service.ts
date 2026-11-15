@@ -31,7 +31,7 @@ export class EmailService {
   }
 
   private getPortalUrl(pqrsId?: string): string {
-    const base = this.configService.get<string>('FRONTEND_URL');
+    const base = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
     return pqrsId ? `${base}/pqrs/${pqrsId}` : base;
   }
 
@@ -187,7 +187,7 @@ export class EmailService {
   }
 
   async sendPasswordChangeNotification(data: { nombre: string; email: string }) {
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:4200';
     const html = `
       <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
         <div style="background: #059669; padding: 20px; text-align: center;">

@@ -1,33 +1,12 @@
-import { DataSource } from 'typeorm';
+import { EntityManager } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../users/entities/user.entity';
-import { UserRole } from '../../users/entities/user.entity';
+import { INITIAL_USERS } from './initial-users';
 
-export async function seedUsers(dataSource: DataSource): Promise<void> {
-  const userRepository = dataSource.getRepository(User);
+export async function seedUsers(manager: EntityManager): Promise<void> {
+  const userRepository = manager.getRepository(User);
 
-  const usersToSeed = [
-    {
-      nombre: 'Administrador Maestro',
-      email: 'admin_master@gmail.com',
-      password: 'Adm1n#2026',
-      rol: UserRole.ADMIN,
-    },
-    {
-      nombre: 'Supervisor PQRS',
-      email: 'supervisor_pqrs@gmail.com',
-      password: 'Sup3rPqrs!',
-      rol: UserRole.SUPERVISOR,
-    },
-    {
-      nombre: 'Cliente Portal',
-      email: 'cliente_portal@gmail.com',
-      password: 'Cl13nte$Web',
-      rol: UserRole.USUARIO,
-    },
-  ];
-
-  for (const userData of usersToSeed) {
+  for (const userData of INITIAL_USERS) {
     // Check if user already exists
     const existingUser = await userRepository.findOne({
       where: { email: userData.email },
@@ -57,6 +36,7 @@ export async function seedUsers(dataSource: DataSource): Promise<void> {
 
     // Create user
     const user = userRepository.create({
+      id: userData.id,
       nombre: userData.nombre,
       email: userData.email,
       passwordHash,
