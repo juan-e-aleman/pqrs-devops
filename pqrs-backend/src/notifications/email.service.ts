@@ -12,9 +12,6 @@ export class EmailService {
       host: this.configService.get<string>('SMTP_SERVER'),
       port: this.configService.get<number>('SMTP_PORT'),
       secure: false,
-      tls: {
-        rejectUnauthorized: false,
-      },
       auth: {
         user: this.configService.get<string>('EMAIL_USER'),
         pass: this.configService.get<string>('EMAIL_PASS'),
